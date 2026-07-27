@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <span class="navbar-brand">Portfolio Manager</span>
+        <div class="d-flex text-white gap-3 align-items-center">
+            <span id="currentUser"></span>
+            <form method="post" action="/logout">
+                <button class="btn btn-outline-light btn-sm" type="submit">Logout</button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<div class="container my-4">
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Portfolio Summary</h5>
+                    <div class="metric"><span>Total Cost:</span> <strong id="totalCost">-</strong></div>
+                    <div class="metric"><span>Total Value:</span> <strong id="totalValue">-</strong></div>
+                    <div class="metric"><span>P/L:</span> <strong id="totalPnl">-</strong></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Allocation</h5>
+                    <div class="allocation-chart-container">
+                        <canvas id="allocationChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">Add Portfolio Item</h5>
+            <form id="addItemForm" class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label" for="ticker">Ticker</label>
+                    <select class="form-select" id="ticker" required></select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="assetType">Asset Type</label>
+                    <select class="form-select" id="assetType" required>
+                        <option value="STOCK">STOCK</option>
+                        <option value="BOND">BOND</option>
+                        <option value="CASH">CASH</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="quantity">Quantity</label>
+                    <input class="form-control" id="quantity" type="number" min="0.0001" step="0.0001" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="buyPrice">Buy Price</label>
+                    <input class="form-control" id="buyPrice" type="number" min="0" step="0.01" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="purchaseDate">Purchase Date</label>
+                    <input class="form-control" id="purchaseDate" type="date" required>
+                </div>
+                <div class="col-md-2 d-grid align-self-end">
+                    <button class="btn btn-primary" type="submit">Add</button>
+                </div>
+            </form>
+            <div id="formMessage" class="small mt-2"></div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">Holdings</h5>
+            <div class="small text-muted mb-2">Tip: click "Edit" to update an existing item.</div>
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                    <tr>
+                        <th>Ticker</th>
+                        <th>Type</th>
+                        <th>Quantity</th>
+                        <th>Buy Price</th>
+                        <th>Purchase Date</th>
+                        <th>Current Price</th>
+                        <th>Current Value</th>
+                        <th>P/L</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody id="portfolioTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">Live Price Snapshot</h5>
+            <form id="snapshotForm" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label" for="snapshotTicker">Ticker</label>
+                    <select class="form-select" id="snapshotTicker" required></select>
+                </div>
+                <div class="col-md-2 d-grid align-self-end">
+                    <button class="btn btn-outline-primary" type="submit">Refresh Live</button>
+                </div>
+                <div class="col-md-4 align-self-end">
+                    <div class="btn-group w-100" role="group" aria-label="Snapshot window selector">
+                        <button class="btn btn-outline-secondary active" type="button" data-window="30">30D</button>
+                        <button class="btn btn-outline-secondary" type="button" data-window="90">90D</button>
+                        <button class="btn btn-outline-secondary" type="button" data-window="252">1Y</button>
+                    </div>
+                </div>
+            </form>
+            <div id="snapshotMessage" class="small mt-2"></div>
+            <div class="row mt-3 g-3">
+                <div class="col-md-3">
+                    <div class="card border-0 bg-light h-100"><div class="card-body p-3"><div class="small text-muted">Prev Close</div><div id="snapshotPrevClose" class="fw-semibold">-</div></div></div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 bg-light h-100"><div class="card-body p-3"><div class="small text-muted">Day Change</div><div id="snapshotDayChange" class="fw-semibold">-</div></div></div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 bg-light h-100"><div class="card-body p-3"><div class="small text-muted">Period High</div><div id="snapshotPeriodHigh" class="fw-semibold">-</div></div></div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 bg-light h-100"><div class="card-body p-3"><div class="small text-muted">Period Low</div><div id="snapshotPeriodLow" class="fw-semibold">-</div></div></div>
+                </div>
+            </div>
+            <div class="table-responsive mt-3">
+                <table class="table table-sm">
+                    <tbody>
+                    <tr><th scope="row">Average Close</th><td id="snapshotAvgClose">-</td></tr>
+                    <tr><th scope="row">Period Return</th><td id="snapshotPeriodReturn">-</td></tr>
+                    <tr><th scope="row">Volatility (Daily Return StdDev)</th><td id="snapshotVolatility">-</td></tr>
+                    <tr><th scope="row">Average Volume</th><td id="snapshotAvgVolume">-</td></tr>
+                    <tr><th scope="row">Latest Volume</th><td id="snapshotLatestVolume">-</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-2">
+                <canvas id="snapshotChart" height="110"></canvas>
+            </div>
+            <div class="table-responsive mt-3">
+                <table class="table table-sm">
+                    <tbody>
+                    <tr><th scope="row">Ticker</th><td id="snapshotTickerValue">-</td></tr>
+                    <tr><th scope="row">Latest Price</th><td id="snapshotPriceValue">-</td></tr>
+                    <tr><th scope="row">Fetched At</th><td id="snapshotFetchedAtValue">-</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/dashboard.js"></script>
+</body>
+</html>
+
